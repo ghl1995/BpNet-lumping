@@ -149,3 +149,18 @@ def geometry_loss(matrix, path_name):
             var += torch.sum(torch.var(subset, 0))
     return var * 100
 
+
+def cal_RMSE(tcm, TCM, A, n):
+    RMSE = []
+    tpm = tcm / np.sum(tcm, 0)
+    TPM = TCM / np.sum(TCM, 0)
+    d = np.diag(np.sum(tcm, 0) / np.sum(tcm))
+    D = np.diag(np.sum(TCM, 0) / np.sum(TCM))
+    for j in range(1, n + 1):
+        temp_RMSE = np.linalg.norm(
+            A.transpose().dot(np.linalg.matrix_power(tpm, j)).dot(d).dot(A).dot(
+                np.linalg.inv(D)) - np.linalg.matrix_power(TPM, j)) / (
+                            latent_dim ** 2)
+        RMSE.append(temp_RMSE)
+        print(temp_RMSE)
+    return np.sqrt(np.sum(RMSE) / n)

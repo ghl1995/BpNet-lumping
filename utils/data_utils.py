@@ -3,6 +3,23 @@ from utils.utils import *
 import numpy as np
 import os
 
+
+def count(traj, matrix1, lagtime):
+    for j in range(len(traj) - lagtime):
+        matrix1[int(traj[j])][int(traj[j + lagtime])] += 1
+    return matrix1
+
+def convert_microstate_to_indicator_function(assignment, nstate, lagtime):
+    matrix = np.zeros([len(assignment), nstate])
+    for j in range(len(assignment)):
+        matrix[j][int(assignment[j])] = 1.0
+    input_index = range(len(assignment) - lagtime)
+    output_index = range(lagtime, len(assignment))
+    input_sequence = matrix[input_index, :]
+    output_sequence = matrix[output_index, :]
+    return input_sequence, output_sequence
+
+
 def gen_data(is_generate=True, path='', lagtime=10):
     dir_path = os.listdir(path)
     partition_curr_tot = []

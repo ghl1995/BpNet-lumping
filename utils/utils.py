@@ -1,5 +1,7 @@
 import numpy as np
 import math
+from scipy.linalg import fractional_matrix_power
+
 
 def count(traj, matrix1, lagtime):
     for j in range(len(traj) - lagtime):

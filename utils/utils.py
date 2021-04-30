@@ -33,7 +33,6 @@ def normalize_eigenvector_fromTCM(C):
     b = fractional_matrix_power(a, 0.5)
     return u.dot(b), c.dot(v), s1
 
-
 def normalize_eigenvector_fromTCM_torch(C, bs):
     # D_norm = np.diag(np.sum(C, 0))
     # print(torch.sum(C, 0))
@@ -57,8 +56,69 @@ def normalize_eigenvector_fromTCM_torch(C, bs):
         b = torch.mm(torch.mm(ua, torch.diag(sa.pow(0.5))), va.t())
         return u.mm(b), v.mm(c), s1
 
-    
-    def eigenvalue_comp(time1_M, time2_M):
+
+def PCCA_test(tcm, TCM, lumping_matrix):
+    u_m, v_m, s_m = normalize_eigenvector_fromTCM(tcm)
+    u_M, v_M, s_M = normalize_eigenvector_fromTCM(TCM)
+    print('eigenvalue for TCM:\n')
+    print(s_M)
+    print('eigenvalue for tcm:\n')
+    print(s_m)
+    print('eigenvector for TCM:\n')
+    print(u_M)
+    print('eigenvector for tcm:\n')
+    print(np.matmul(lumping_matrix.transpose(), u_m[:, 0:latent_dim]))
+    print('check identity:\n')
+    print(
+        np.matmul(v_M, np.matmul(lumping_matrix.transpose(), u_m[:, 0:latent_dim])))
+    B = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+    PCCA_yloss = np.mean(
+        np.abs(
+            np.abs(np.matmul(v_M, np.matmul(lumping_matrix.transpose(), u_m[:, 0:latent_dim]))) - np.eye(4)))
+    print(PCCA_yloss)
+    return PCCA_yloss
+
+def PCCA(tcm):
+    tpm = np.dot(np.diag(np.sum(tcm, 1) ** (-1)), tcm)
+    lumping = pyemma.msm.PCCA(tpm, latent_dim)
+    TCM_PCCA = np.zeros((latent_dim, latent_dim))
+    lumping_PCCA = np.zeros((nstate, latent_dim))
+    print(lumping.metastable_assignment)
+    for i in range(nstate):
+        lumping_PCCA[i][lumping.metastable_assignment[i]] = 1
+    for i in range(nstate):
+        for j in range(nstate):
+            k = lumping.metastable_assignment[i]
+            m = lumping.metastable_assignment[j]
+            TCM_PCCA[k][m] += tcm[i][j]
+    return (TCM_PCCA + TCM_PCCA.transpose()) / 2, lumping, lumping_PCCA
+
+
+def abnormal_test(tcm):
+    tpm = np.dot(np.diag(np.sum(tcm, 1) ** (-1)), tcm)
+    lumping = pyemma.msm.PCCA(tpm, latent_dim)
+    TCM_PCCA = np.zeros((latent_dim, latent_dim))
+    lumping_PCCA = np.zeros((nstate, latent_dim))
+    for s in range(100000):
+        lumping.metastable_assignment[list1] = np.random.randint(2, size=len(list1)) + 2
+        for i in range(nstate):
+            lumping_PCCA[i][lumping.metastable_assignment[i]] = 1
+        for i in range(nstate):
+            for j in range(nstate):
+                k = lumping.metastable_assignment[i]
+                m = lumping.metastable_assignment[j]
+                TCM_PCCA[k][m] += tcm[i][j]
+        u_m, v_m, s_m = normalize_eigenvector_fromTCM(tcm)
+        u_M, v_M, s_M = normalize_eigenvector_fromTCM((TCM_PCCA + TCM_PCCA.transpose()) / 2)
+        if np.abs(np.matmul(v_M, np.matmul(lumping_PCCA.transpose(), u_m[:, 0:latent_dim])))[2, 2] > 0.90:
+            print('good')
+            print(np.matmul(v_M, np.matmul(lumping_PCCA.transpose(), u_m[:, 0:latent_dim])))
+            print(lumping.metastable_assignment[list1])
+        print(s)
+
+
+
+def eigenvalue_comp(time1_M, time2_M):
     cov_M = (torch.mm(time1_M.t(), time2_M) + torch.mm(time2_M.t(), time1_M)) / 2
     D = torch.diag(torch.sum(cov_M, 1) ** (-0.5))
     print(torch.sum(cov_M, 1))
@@ -76,3 +136,5 @@ def eigenvec_comp(time1_M, time2_M, projection, scm):
     return s_M, u_M, v_M, cov_M, torch.mean(
         torch.abs(torch.abs(torch.mm(v_M, projection)[1:4, 1:4]) - torch.eye(3).cuda()) * Tensor1), torch.mean(
         torch.abs(s_M[2: 4] - scm[2:4]) * Tensor2.cuda())
+
+

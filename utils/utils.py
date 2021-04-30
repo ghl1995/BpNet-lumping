@@ -54,3 +54,23 @@ def normalize_eigenvector_fromTCM_torch(C, bs):
         c = torch.mm(torch.mm(ua, torch.diag(sa.pow(-0.5))), va.t())
         b = torch.mm(torch.mm(ua, torch.diag(sa.pow(0.5))), va.t())
         return u.mm(b), v.mm(c), s1
+
+    
+    def eigenvalue_comp(time1_M, time2_M):
+    cov_M = (torch.mm(time1_M.t(), time2_M) + torch.mm(time2_M.t(), time1_M)) / 2
+    D = torch.diag(torch.sum(cov_M, 1) ** (-0.5))
+    print(torch.sum(cov_M, 1))
+    cov = torch.mm(torch.mm(D, cov_M), D)
+    u_M, s_M, v_M = torch.svd(cov)
+    return s_M, torch.mean(torch.abs(s_M[0:4] - scm[0:latent_dim]))
+
+
+def eigenvec_comp(time1_M, time2_M, projection, scm):
+    Tensor1 = torch.tensor([10, 10, 10]).to(device=device, dtype=torch.float32)
+    Tensor2 = torch.tensor([10, 100]).to(device=device, dtype=torch.float32)
+    cov_M = (torch.mm(time1_M.t(), time2_M) + torch.mm(time2_M.t(), time1_M)) / 2
+    u_M, v_M, s_M = normalize_eigenvector_fromTCM_torch(cov_M, batch_size)
+    # u_M = torch.mm(u_M, torch.diag(torch.sign(u_M[0])))
+    return s_M, u_M, v_M, cov_M, torch.mean(
+        torch.abs(torch.abs(torch.mm(v_M, projection)[1:4, 1:4]) - torch.eye(3).cuda()) * Tensor1), torch.mean(
+        torch.abs(s_M[2: 4] - scm[2:4]) * Tensor2.cuda())

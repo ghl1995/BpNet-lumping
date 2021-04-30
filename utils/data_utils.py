@@ -45,3 +45,23 @@ def split_data(partition_curr_tot, partition_next_tot):
     tcm_test = (test_curr.transpose().dot(test_next) + test_next.transpose().dot(test_curr)) / 2
 
     return train_curr, train_next, test_curr, test_next, tcm_train
+
+def gen_sim_data(label, type, lumping_PCCA_assign):
+    X = []
+    Y = []
+    k = 20000
+    rand = np.random.randint(nstate, size=k)
+    for i in range(k):
+        a = np.zeros(nstate)
+        a[rand[i]] = 1
+        X.append(a)
+        a = np.zeros(latent_dim)
+        if rand[i] in label:
+            a[0] = 1
+        else:
+            a[lumping_PCCA_assign.metastable_assignment[rand[i]]] = 1
+        Y.append(a)
+    X = np.array(X)
+    Y = np.array(Y)
+
+    return X, Y

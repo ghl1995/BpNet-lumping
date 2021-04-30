@@ -11,21 +11,6 @@ import pyemma
 from skimage.exposure import rescale_intensity
 
 
-##set parameter
-nstate = 100
-lag = [600]
-# 2d potential [2, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 200, 300, 500, 600, 700, 800, 900, 1000]
-USE_GPU = True
-if USE_GPU and torch.cuda.is_available():
-    device = torch.device('cuda')
-else:
-    device = torch.device('cpu')
-batch_size = 2000
-input_dim = nstate
-latent_dim = 4
-show_iter = 400
-learning_rate = 0.001
-epison = 10e-8
 
 ###train
 def train(save_path, train_curr, train_next, tcm, ucm, scm, model, optimizer, PCCA_yloss, lagtime):
@@ -113,11 +98,26 @@ def train(save_path, train_curr, train_next, tcm, ucm, scm, model, optimizer, PC
   
 
 def main(args):
+    ##set parameter
+    nstate = args.nstate
+    lag = args.lag
+    USE_GPU = True
+    if USE_GPU and torch.cuda.is_available():
+       device = torch.device('cuda')
+    else:
+       device = torch.device('cpu')
+    batch_size = args.bs
+    input_dim = args.nstate
+    latent_dim = args.latent_dim
+    show_iter = args,show_iter
+    learning_rate = args.lr
+    epison = args.eps
+    data_path = args.data_path
+    save_path = args.save_data_path
+    
     for lagtime in lag:
         print('lagtime', lagtime)
         ###gen_data and tcm
-        data_path = args.data_path
-        save_path = args.save_data_path
         partition_curr_tot, partition_next_tot = gen_data(True, data_path, lagtime)
 
         train_curr, train_next, test_curr, test_next, tcm = split_data(partition_curr_tot, partition_next_tot)

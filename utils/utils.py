@@ -137,8 +137,8 @@ def eigenvec_comp(time1_M, time2_M, projection, scm):
         torch.abs(torch.abs(torch.mm(v_M, projection)[1:4, 1:4]) - torch.eye(3).cuda()) * Tensor1), torch.mean(
         torch.abs(s_M[2: 4] - scm[2:4]) * Tensor2.cuda())
 
-def geometry_loss(matrix):
-    position = np.loadtxt('ilona_daa_TIC.txt')
+def geometry_loss(matrix, path_name):
+    position = np.loadtxt(path_name)
     position = torch.from_numpy(position[:, 1:3])
     position = torch.tensor(position, requires_grad=True)
     index = torch.argmax(matrix, 1)
